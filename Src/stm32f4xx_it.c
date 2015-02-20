@@ -59,9 +59,8 @@ static volatile uint32_t touch_timer=0;
 static volatile uint32_t msec_counter = 0;
 static volatile uint32_t Timeout_Timer_0 = 0;
 
-/* I2C handler declared in "main.c" file */
-extern I2C_HandleTypeDef I2cHandle;
-extern UART_HandleTypeDef UartHandle;
+//extern UART_HandleTypeDef UartHandle;
+//extern TIM_HandleTypeDef    TimHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -235,30 +234,106 @@ void SysTick_Handler(void)
   * @param  None
   * @retval None   
   */
-void USARTx_DMA_RX_IRQHandler(void)
+/*void USARTx_DMA_RX_IRQHandler(void)
 {
   HAL_DMA_IRQHandler(UartHandle.hdmarx);
-}
+}*/
 
 /**
   * @brief  This function handles DMA TX interrupt request.
   * @param  None
   * @retval None   
   */
-void USARTx_DMA_TX_IRQHandler(void)
+/*void USARTx_DMA_TX_IRQHandler(void)
 {
   HAL_DMA_IRQHandler(UartHandle.hdmatx);
-}
+}*/
 
 /**
   * @brief  This function handles USARTx interrupt request.
   * @param  None
   * @retval None
   */
-void USARTx_IRQHandler(void)
+/*void USARTx_IRQHandler(void)
 {
-  HAL_UART_IRQHandler(&UartHandle);
-}
+	uint8_t vRxBuffer_Usart[256];
+	uint32_t tmp1 = 0, tmp2 = 0;
+	uint8_t index = 0;
+	UART_HandleTypeDef *huart;
+	//printf("IRQ event\n");
+	//HAL_UART_IRQHandler(&UartHandle);
+	huart = &UartHandle;
+	
+	tmp1 = __HAL_UART_GET_FLAG(huart, UART_FLAG_PE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_PE);  
+	/* UART parity error interrupt occurred ------------------------------------
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		__HAL_UART_CLEAR_PEFLAG(huart);
+		
+		huart->ErrorCode |= HAL_UART_ERROR_PE;
+	}
+	
+	tmp1 = __HAL_UART_GET_FLAG(huart, UART_FLAG_FE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_ERR);
+	/* UART frame error interrupt occurred -------------------------------------
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		__HAL_UART_CLEAR_FEFLAG(huart);
+
+		huart->ErrorCode |= HAL_UART_ERROR_FE;
+	}
+	
+	tmp1 = __HAL_UART_GET_FLAG(huart, UART_FLAG_NE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_ERR);
+	/* UART noise error interrupt occurred -------------------------------------
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{ 
+		__HAL_UART_CLEAR_NEFLAG(huart);
+
+		huart->ErrorCode |= HAL_UART_ERROR_NE;
+	}
+  
+	tmp1 = __HAL_UART_GET_FLAG(huart, UART_FLAG_ORE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_ERR);
+	/* UART Over-Run interrupt occurred ----------------------------------------
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{ 
+		__HAL_UART_CLEAR_OREFLAG(huart);
+
+		huart->ErrorCode |= HAL_UART_ERROR_ORE;
+	}
+	
+	tmp1 = __HAL_UART_GET_FLAG(&UartHandle, UART_FLAG_RXNE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&UartHandle, UART_IT_RXNE);
+	printf("Flag_RxNE : %s\n", tmp1 ? "SET" : "RESET");
+	printf("IT_RxNE : %s\n", tmp2 ? "SET" : "RESET");
+	/* UART in mode Receiver ---------------------------------------------------
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		//HAL_UART_RxCpltCallback(huart);
+
+		vRxBuffer_Usart[index] = (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
+		printf("aRxBuffer[%d]: %d\n", index, vRxBuffer_Usart[index]);
+	}
+	
+	if(huart->ErrorCode != HAL_UART_ERROR_NONE)
+	{
+		HAL_UART_ErrorCallback(huart);
+		printf("Uart_ErrCode: %d\n", huart->ErrorCode);
+	}
+}*/
+
+/**
+  * @brief  This function handles TIM interrupt request.
+  * @param  None
+  * @retval None
+  */
+/*void TIMx_IRQHandler(void)
+{
+	HAL_TIM_IRQHandler(&TimHandle);
+}*/
+
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None

@@ -30,7 +30,7 @@ PROJECT = Verventa-Slave
 CORE = cortex-m4
 
 # linker script
-LD_SCRIPT = STM32F407VG_FLASH.ld 
+LD_SCRIPT = STM32F411RE_FLASH.ld 
 
 # output folder (absolute or relative path, leave empty for in-tree compilation)
 OUT_DIR = out
@@ -49,7 +49,7 @@ AS_DEFS =
 
 # include directories (absolute or relative paths to additional folders with
 # headers, current folder is always included)
-INC_DIRS = Inc ../$(STMCUBE)/Drivers/CMSIS/Include ../$(STMCUBE)/Drivers/CMSIS/Device/ST/STM32F4xx/Include ../$(STMCUBE)/Drivers/STM32F4xx_HAL_Driver/Inc ../$(STMCUBE)/Drivers/CMSIS/Include
+INC_DIRS = Inc port modbus/rtu modbus/ascii modbus/include ../$(STMCUBE)/Drivers/CMSIS/Include ../$(STMCUBE)/Drivers/CMSIS/Device/ST/STM32F4xx/Include ../$(STMCUBE)/Drivers/STM32F4xx_HAL_Driver/Inc ../$(STMCUBE)/Drivers/CMSIS/Include
 
 # library directories (absolute or relative paths to additional folders with
 # libraries)
@@ -61,7 +61,7 @@ LIBS =
 
 # additional directories with source files (absolute or relative paths to
 # folders with source files, current folder is always included)
-SRCS_DIRS = Src ../$(STMCUBE)/Drivers/STM32F4xx_HAL_Driver/Src
+SRCS_DIRS = Src port modbus modbus/rtu modbus/ascii modbus/functions ../$(STMCUBE)/Drivers/STM32F4xx_HAL_Driver/Src
 
 # extension of C++ files
 CXX_EXT = cpp

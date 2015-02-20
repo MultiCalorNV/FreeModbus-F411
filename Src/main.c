@@ -34,28 +34,39 @@
 *
 ******************************************
 */
+/*	Modbus includes --------------------------------------------------*/
+#include "mb.h"
+#include "mbport.h"
 
 
-/* Private Functions -----------------------------------------------------*/
+/*	Private Functions ------------------------------------------------*/
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void init_leds(void);
 static void sram_init(void);
 static void I2C_init(void);
 static void USART_init(void);
+static void timer_init(void);
 
-/* Private macro -----------------------------------------------------*/
-/* Private variables -------------------------------------------------*/
+/*	Private macro -----------------------------------------------------*/
+/*	Private variables -------------------------------------------------*/
 SRAM_HandleTypeDef hsram;
 FSMC_NORSRAM_TimingTypeDef SRAM_Timing;
 I2C_HandleTypeDef I2cHandle;
 UART_HandleTypeDef UartHandle;
+TIM_HandleTypeDef TimHandle;
 
-/* Defines -----------------------------------------------------------*/
+uint32_t baudrate = 115200;
+uint32_t uwPrescalerValue = 0;
+
+static uint16_t usRegInputStart = REG_INPUT_START;
+static uint16_t usRegInputBuf[REG_INPUT_NREGS];
+
+/*	Defines -----------------------------------------------------------*/
 #define	I2C_ADDRESS		0xFE
 
 //****************************************************************************
-/* Static variables -------------------------------------------------*/
+/*	Static variables -------------------------------------------------*/
 static int Debug_ITMDebug = 0;
 
 //****************************************************************************
@@ -104,6 +115,9 @@ void Debug_ITMDebugOutputString(char *Buffer){
   */
 int main(void){
 	int n;
+	eMBErrorCode eStatus;
+	uint32_t Uart_Error;
+	
 	/* STM32f4xx HAL library initialization:
 	 - Cofigure Flash prefetch, flash preread and Buffer caches
 	 - Systick timer config
@@ -124,21 +138,36 @@ int main(void){
 	sram_init();
 	I2C_init();
 	USART_init();
+	timer_init();
 	/*********************************************************************/
 	
 	/*	Show us some status leds ----------------------------------------*/
 	init_leds();
-
+	/*********************************************************************/
+	
+	/*	Init modbus	slave -----------------------------------------------*/
+	eStatus = eMBInit(MB_RTU, 0x0A, 0, 115200, MB_PAR_EVEN);
+	printf("eStatus: %s\n", eStatus ? "error": "no'error");
+	/*********************************************************************/
+	
+	/*	Enable the Modbus Protocol Stack --------------------------------*/
+	eStatus = eMBEnable();
+	printf("eStatus: %s\n", eStatus ? "error": "no'error");
 	
 	while(1){
 
-		printf("Compiled HAL\n");
-		
+		//printf("HAL integrated...\n");
 				
-		test_Cplusplus();
+		//test_Cplusplus();
 		
 		if(gui_Exec == true){
+			eStatus = eMBPoll();
 			
+			usRegInputBuf[499]++;
+			usRegInputBuf[500]++;
+			usRegInputBuf[501]++;
+			usRegInputBuf[502]++;
+			printf("eStatus: %s\n", eStatus ? "error": "no'error");
 			printf("SystemCoreClock: %d\n", SystemCoreClock);
 			
 			/*Clear Flag*/
@@ -147,12 +176,99 @@ int main(void){
 		
 		if(Touch_Flagged == true){
 			
+			//Uart_Error = HAL_UART_GetError(&UartHandle);
+			//printf("Uart_Error: %d\n", Uart_Error);
+			
 			Touch_Flagged = false;
 		}
 		
 	}
 }
 
+/**
+  * @brief	Builds the Input Registers frame.
+  * @param	*pucRegBuffer
+  * @param	usAddress
+  * @param	usNRegs
+  * @retval	eMBErrorCode
+  */
+eMBErrorCode
+eMBRegInputCB(uint8_t* pucRegBuffer, uint16_t usAddress, uint16_t usNRegs)
+{
+    eMBErrorCode    eStatus = MB_ENOERR;
+    int             iRegIndex;
+
+    if( (usAddress >= REG_INPUT_START)
+        && (usAddress + usNRegs <= REG_INPUT_START + REG_INPUT_NREGS))
+    {
+        iRegIndex = (int)(usAddress - usRegInputStart);
+        while( usNRegs > 0 )
+        {
+            *pucRegBuffer++ = (unsigned char)(usRegInputBuf[iRegIndex] >> 8);
+            *pucRegBuffer++ = (unsigned char)(usRegInputBuf[iRegIndex] & 0xFF);
+            iRegIndex++;
+            usNRegs--;
+        }
+    }
+    else
+    {
+        eStatus = MB_ENOREG;
+    }
+
+    return eStatus;
+}
+
+/**
+  * @brief	Builds the Holding Registers frame.
+  * @param	*pucRegBuffer
+  * @param	usAddress
+  * @param	usNRegs
+  * @param	eMode
+  * @retval	eMBErrorCode
+  */
+eMBErrorCode
+eMBRegHoldingCB(uint8_t* pucRegBuffer, uint16_t usAddress, uint16_t usNRegs, eMBRegisterMode eMode)
+{
+    ( void )pucRegBuffer;
+    ( void )usAddress;
+    ( void )usNRegs;
+    ( void )eMode;
+    return MB_ENOREG;
+}
+
+/**
+  * @brief	Builds the Coils frame.
+  * @param	*pucRegBuffer
+  * @param	usAddress
+  * @param	usNCoils
+  * @param	eMode
+  * @retval	eMBErrorCode
+  */
+eMBErrorCode
+eMBRegCoilsCB(uint8_t* pucRegBuffer, uint16_t usAddress, uint16_t usNCoils, eMBRegisterMode eMode)
+{
+    ( void )pucRegBuffer;
+    ( void )usAddress;
+    ( void )usNCoils;
+    ( void )eMode;
+    return MB_ENOREG;
+}
+
+/**
+  * @brief	Builds the Discrete frame.
+  * @param	*pucRegBuffer
+  * @param	usAddress
+  * @param	usNDiscrete
+  * @retval	eMBErrorCode
+  */
+eMBErrorCode
+eMBRegDiscreteCB(uint8_t* pucRegBuffer, uint16_t usAddress, uint16_t usNDiscrete)
+{
+    ( void )pucRegBuffer;
+    ( void )usAddress;
+    ( void )usNDiscrete;
+    return MB_ENOREG;
+}
 
 
 /**
@@ -229,7 +345,7 @@ static void Error_Handler(void){
 	
 	while(1){
 		/* Put error on LED3 */
-		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_10);
 		printf("Peripheral config error\n");
 	}
 }
@@ -243,14 +359,14 @@ static void init_leds(void){
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	// Enable AHB1per Clock
-	__GPIOD_CLK_ENABLE();
+	__GPIOC_CLK_ENABLE();
 
 	//Config pins
-	GPIO_InitStructure.Pin = GPIO_PIN_12 | GPIO_PIN_13;
+	GPIO_InitStructure.Pin = GPIO_PIN_10 | GPIO_PIN_12;
 	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStructure.Pull = GPIO_PULLUP;
-	HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
 }
 
 /**
@@ -316,30 +432,51 @@ static void I2C_init(void){
 }
 
 /**
-  * @brief init USART2
+  * @brief init USART
   * @param None
   * @retval None
   */
 static void USART_init(void){
-	/*	Configure the USART2 peripheral in the Asynchronous mode (UART Mode)------*/
-	/* UART2 configured as follow:
+	/*	Configure the USART1 peripheral in the Asynchronous mode (UART Mode)------*/
+	/* UART1 configured as follow:
       - Word Length = 8 Bits
       - Stop Bit = One Stop bit
       - Parity = None
-      - BaudRate = 9600 baud
+      - BaudRate = 115200 baud
       - Hardware flow control disabled (RTS and CTS signals) */
 	UartHandle.Instance          = USARTx;
   
-	UartHandle.Init.BaudRate     = 115200;
+	UartHandle.Init.BaudRate     = 28800;
 	UartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
 	UartHandle.Init.StopBits     = UART_STOPBITS_1;
 	UartHandle.Init.Parity       = UART_PARITY_NONE;
 	UartHandle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
 	UartHandle.Init.Mode         = UART_MODE_TX_RX;
-	UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+	UartHandle.Init.OverSampling = UART_OVERSAMPLING_8;
     
 	if(HAL_UART_Init(&UartHandle) != HAL_OK)
 	{
+		Error_Handler();
+	}
+}
+
+/**
+  * @brief init timer
+  * @param None
+  * @retval None
+  */
+static void timer_init(void){
+	uwPrescalerValue = (uint32_t) ((SystemCoreClock /2) / 10000) - 1;
+	
+	TimHandle.Instance = TIMx;
+	
+	TimHandle.Init.Period = 1000 - 1;
+	TimHandle.Init.Prescaler = uwPrescalerValue;
+	TimHandle.Init.ClockDivision = 0;
+	TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
+	if(HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+	{
+		/* Initialization Error */
 		Error_Handler();
 	}
 }

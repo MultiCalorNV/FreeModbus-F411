@@ -64,10 +64,10 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
-void USARTx_DMA_RX_IRQHandler(void);
-void USARTx_DMA_TX_IRQHandler(void);
+//void USARTx_DMA_RX_IRQHandler(void);
+//void USARTx_DMA_TX_IRQHandler(void);
 void USARTx_IRQHandler(void);
-
+void TIMx_IRQHandler(void);
 #ifdef __cplusplus
 }
 #endif
