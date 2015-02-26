@@ -49,12 +49,12 @@
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Definition for TIMx clock resources */
-#define TIMx                           TIM3
-#define TIMx_CLK_ENABLE                __HAL_RCC_TIM3_CLK_ENABLE
+#define TIMx                           TIM5
+#define TIMx_CLK_ENABLE                __HAL_RCC_TIM5_CLK_ENABLE
 
 /* Definition for TIMx's NVIC */
-#define TIMx_IRQn                      TIM3_IRQn
-#define TIMx_IRQHandler                TIM3_IRQHandler
+#define TIMx_IRQn                      TIM5_IRQn
+#define TIMx_IRQHandler                TIM5_IRQHandler
 
 /* Definition for USARTx clock resources */
 #define USARTx                           USART1
@@ -109,8 +109,14 @@
 #define I2Cx_SDA_AF                     GPIO_AF4_I2C1
 
 /*	modbus defines */
-#define REG_INPUT_START 1
+#define REG_INPUT_START 0
 #define REG_INPUT_NREGS 600
+
+#define	S_REG_HOLDING_START	0
+#define	S_REG_HOLDING_NREGS	600
+
+#define	S_COIL_START	0
+#define	S_COIL_NCOILS	600
 
 /* Size of I2C_Transmission buffer */
 #define TXBUFFERSIZEI2C					(COUNTOF(aTxBuffer_I2C))

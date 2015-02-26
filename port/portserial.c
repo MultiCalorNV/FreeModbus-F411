@@ -18,6 +18,8 @@
  *
  * File: $Id: portserial.c,v 1.1 2007/04/24 23:15:18 wolti Exp $
  */
+
+/*  Platform includes --------------------------------*/
 #include "main.h"
 #include "port.h"
 #include "stm32f4xx_it.h"
@@ -32,6 +34,7 @@ static void     prvvUARTRxISR( void );
 
 /*	exported variables ------------------------------------------------------*/
 extern UART_HandleTypeDef UartHandle;
+extern bool            xtNeedPoll;
 
 /*	Private variables -------------------------------------------------------*/
 /*static volatile*/ uint8_t aTxBuffer_Usart[]= "serial Port up!";
@@ -56,6 +59,8 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
     }
     if( xTxEnable )
     {
+		/*	Enable DE transmit signal	*/
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
 		/* Enable the UART Transmit data register empty Interrupt */
 		__HAL_UART_ENABLE_IT(&UartHandle, UART_IT_TXE);
         prvvUARTTxReadyISR();
@@ -64,6 +69,8 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
     {
 		/* Disable the UART Transmit data register empty Interrupt */
 		__HAL_UART_DISABLE_IT(&UartHandle, UART_IT_TXE);
+		/* Enable the UART Transmit Complete Interrupt */    
+		__HAL_UART_ENABLE_IT(&UartHandle, UART_IT_TC);
     }
 }
 
@@ -190,7 +197,18 @@ void USARTx_IRQHandler(void)
 	/* UART in mode Transmitter ------------------------------------------------*/
 	if((tmp1 != RESET) && (tmp2 != RESET))
 	{
-		pxMBFrameCBTransmitterEmpty();
+		xtNeedPoll = pxMBFrameCBTransmitterEmpty();
+	}
+	
+	tmp1 = __HAL_UART_GET_FLAG(huart, UART_FLAG_TC);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_TC);
+	/* UART in mode Transmitter end --------------------------------------------*/
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		/*	Enable DE receive signal	*/
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		/* Disable the UART Transmit Complete Interrupt */    
+		__HAL_UART_DISABLE_IT(huart, UART_IT_TC);
 	}
 	
 	if(huart->ErrorCode != HAL_UART_ERROR_NONE)

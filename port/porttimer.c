@@ -30,7 +30,7 @@
 
 /*	static functions --------------------------------------------------------*/
 /*	static variables --------------------------------------------------------*/
-uint32_t counter_val = 0;
+//uint32_t counter_val = 0;
 /*	exported variables ------------------------------------------------------*/
 extern TIM_HandleTypeDef TimHandle;
 
@@ -74,7 +74,6 @@ void TIMx_IRQHandler(void)
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_12);
 	//counter_val = __HAL_TIM_GET_COUNTER(&TimHandle);
 	//printf("Counter at interrupt: %d\n", counter_val);
 	pxMBPortCBTimerExpired();
